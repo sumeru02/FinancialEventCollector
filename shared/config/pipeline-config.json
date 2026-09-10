@@ -1,0 +1,40 @@
+{
+    "sla": {
+        "publishLatencyThresholdMinutes": 15
+    },
+    "auditEventStageMap": {
+        "IngestAuditEvent": {
+            "stage": "Ingest",
+            "timestampField": "ingestionTimestamp"
+        },
+        "IndexAuditEvent": {
+            "stage": "Index",
+            "timestampField": "indexingTimestamp"
+        },
+        "PublishAuditEvent": {
+            "stage": "Publish",
+            "timestampField": "publishingTimestamp"
+        }
+    },
+    "workerStageKeywords": [
+        {
+            "keyword": "Ingest",
+            "stage": "Ingest"
+        },
+        {
+            "keyword": "Index",
+            "stage": "Index"
+        },
+        {
+            "keyword": "Publish",
+            "stage": "Publish"
+        }
+    ],
+    "nonBlockingStages": [
+        "Index"
+    ],
+    "workerLogLevelsToInclude": [
+        "Error",
+        "Warning"
+    ]
+}

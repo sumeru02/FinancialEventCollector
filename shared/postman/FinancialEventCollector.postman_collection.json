@@ -1,0 +1,1093 @@
+{
+    "info": {
+        "_postman_id": "fec-azure-deployed-collection",
+        "name": "FinancialEventCollector — Azure (Deployed)",
+        "description": "Postman collection targeting the deployed Azure App Service at https://financialeventcollector-bzf0e4htg8d7ecfr.westus2-01.azurewebsites.net/\n\nOrganised by controller:\n- **Admin** (role: admin) — runtime configuration snapshot\n- **Event** (role: user) — lineage, logs, prompt, and AI investigation per event scenario\n- **Incident** (role: user) — incident listing, prompt, and AI investigation per incident scenario\n- **Telemetry** (role: user) — recent investigation telemetry\n- **Validation** (role: admin) — full scenario validation run\n\n### Authentication\nThe `X-Api-Key` header is set **once** at the collection level via the `auth` block and is automatically inherited by every request. The value is driven by the `apiKey` collection variable (default: `AdminSecret`), which grants both `admin` and `user` roles — giving access to all endpoints.\n\nTo change the key, edit the `apiKey` collection variable in Postman (Collection → Variables tab).",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "apikey",
+        "apikey": [
+            {
+                "key": "key",
+                "value": "X-Api-Key",
+                "type": "string"
+            },
+            {
+                "key": "value",
+                "value": "{{apiKey}}",
+                "type": "string"
+            },
+            {
+                "key": "in",
+                "value": "header",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "https://financialeventcollector-bzf0e4htg8d7ecfr.westus2-01.azurewebsites.net",
+            "type": "string",
+            "description": "Root URL of the deployed Azure App Service"
+        },
+        {
+            "key": "apiKey",
+            "value": "AdminSecret",
+            "type": "string",
+            "description": "API key sent as X-Api-Key header on every request. AdminSecret grants both admin and user roles."
+        }
+    ],
+    "item": [
+        {
+            "name": "Admin (role: admin)",
+            "description": "Admin-only configuration endpoints. Requires the admin API key.",
+            "item": [
+                {
+                    "name": "GET /admin/config — Runtime Configuration Snapshot",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/config",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "config"
+                            ]
+                        },
+                        "description": "Returns a full snapshot of the current runtime configuration.\n\nIncludes:\n- Environment name and application version\n- LLM settings (model, max tokens, API base URL — API key is redacted)\n- Cache settings (enabled flag, TTL in hours)\n- Complete RootCause enum catalog with descriptions\n\n**Auth:** admin"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Event (role: user)",
+            "description": "Event lineage and AI investigation endpoints. Organised by the 6 test scenarios stored in data/EventLogs.json.\n\nScenario → EventId mapping:\n| Scenario | EventId |\n|---|---|\n| AllAuditEventsPresent | evt-001 |\n| MissingIngestionAuditEvent | evt-002 |\n| MissingIndexingAuditEvent | evt-003 |\n| MissingPublishingAuditEvent | evt-004 |\n| PublishLatencyExceedsSLA | evt-005 |\n| UnknownRootCause | evt-006 |",
+            "item": [
+                {
+                    "name": "Scenario 1 — AllAuditEventsPresent (evt-001)",
+                    "description": "Healthy baseline: all three pipeline stages (Ingest, Index, Publish) completed successfully within normal timing. No gap expected.",
+                    "item": [
+                        {
+                            "name": "GET /events/evt-001/lineage",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-001/lineage",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-001",
+                                        "lineage"
+                                    ]
+                                },
+                                "description": "Returns the data lineage projection for evt-001 (AllAuditEventsPresent).\n\nExpected: ingestSuccess=true, indexSuccess=true, publishSuccess=true, missingAuditEvents=[], publishLatencySlaMet=true"
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET /events/evt-001/logs",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-001/logs",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-001",
+                                        "logs"
+                                    ]
+                                },
+                                "description": "Returns the raw audit events and worker logs for evt-001.\n\nExpected: 3 EventTelemetry audit events (Ingest, Index, Publish), no worker logs."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET /events/evt-001/prompt",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-001/prompt",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-001",
+                                        "prompt"
+                                    ]
+                                },
+                                "description": "Returns the fully-assembled LLM investigation prompt for evt-001 without invoking the LLM.\n\nUseful for debugging and auditing what data is sent to Claude."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "POST /events/evt-001/investigations",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-001/investigations",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-001",
+                                        "investigations"
+                                    ]
+                                },
+                                "description": "Runs an AI-powered investigation for evt-001 (AllAuditEventsPresent).\n\nExpected verdict: rootCause=AllAuditEventsPresent\nCheck the X-Cache response header: HIT = served from cache, MISS = fresh LLM call.\n\nRate limit: 10 LLM calls/minute per IP."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Scenario 2 — MissingIngestionAuditEvent (evt-002)",
+                    "description": "No IngestAuditEvent recorded. The IngestionWorker logged a ConnectionDropException before the payload could be read. Ingest gates both Index and Publish — the event never entered the pipeline.",
+                    "item": [
+                        {
+                            "name": "GET /events/evt-002/lineage",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-002/lineage",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-002",
+                                        "lineage"
+                                    ]
+                                },
+                                "description": "Returns the data lineage projection for evt-002 (MissingIngestionAuditEvent).\n\nExpected: ingestSuccess=false, indexSuccess=false, publishSuccess=false, missingAuditEvents=[IngestAuditEvent]"
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET /events/evt-002/logs",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-002/logs",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-002",
+                                        "logs"
+                                    ]
+                                },
+                                "description": "Returns the raw audit events and worker logs for evt-002.\n\nExpected: 1 ExceptionTelemetry audit event (IngestAuditEvent with ConnectionDropException), 3 worker log entries."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET /events/evt-002/prompt",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-002/prompt",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-002",
+                                        "prompt"
+                                    ]
+                                },
+                                "description": "Returns the fully-assembled LLM investigation prompt for evt-002 without invoking the LLM."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "POST /events/evt-002/investigations",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-002/investigations",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-002",
+                                        "investigations"
+                                    ]
+                                },
+                                "description": "Runs an AI-powered investigation for evt-002 (MissingIngestionAuditEvent).\n\nExpected verdict: rootCause=MissingIngestionAuditEvent\nCheck the X-Cache response header: HIT = served from cache, MISS = fresh LLM call."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Scenario 3 — MissingIndexingAuditEvent (evt-003)",
+                    "description": "Ingest and Publish are present, but the IndexAuditEvent is missing. The IndexingWorker logged an IndexStoreTimeoutException. Index and Publish run as independent parallel workers — Publish can complete even if Indexing fails.",
+                    "item": [
+                        {
+                            "name": "GET /events/evt-003/lineage",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-003/lineage",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-003",
+                                        "lineage"
+                                    ]
+                                },
+                                "description": "Returns the data lineage projection for evt-003 (MissingIndexingAuditEvent).\n\nExpected: ingestSuccess=true, indexSuccess=false, publishSuccess=true, missingAuditEvents=[IndexAuditEvent]"
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET /events/evt-003/logs",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-003/logs",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-003",
+                                        "logs"
+                                    ]
+                                },
+                                "description": "Returns the raw audit events and worker logs for evt-003.\n\nExpected: 3 audit events (Ingest=EventTelemetry, Index=ExceptionTelemetry with IndexStoreTimeoutException, Publish=EventTelemetry), 1 IndexingWorker error log."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET /events/evt-003/prompt",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-003/prompt",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-003",
+                                        "prompt"
+                                    ]
+                                },
+                                "description": "Returns the fully-assembled LLM investigation prompt for evt-003 without invoking the LLM."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "POST /events/evt-003/investigations",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-003/investigations",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-003",
+                                        "investigations"
+                                    ]
+                                },
+                                "description": "Runs an AI-powered investigation for evt-003 (MissingIndexingAuditEvent).\n\nExpected verdict: rootCause=MissingIndexingAuditEvent\nCheck the X-Cache response header: HIT = served from cache, MISS = fresh LLM call."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Scenario 4 — MissingPublishingAuditEvent (evt-004)",
+                    "description": "Ingest and Index are present, but the PublishAuditEvent is missing. The PublishingWorker exceeded the connection retry limit to EventHub — the event was fully processed internally but never reached downstream consumers.",
+                    "item": [
+                        {
+                            "name": "GET /events/evt-004/lineage",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-004/lineage",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-004",
+                                        "lineage"
+                                    ]
+                                },
+                                "description": "Returns the data lineage projection for evt-004 (MissingPublishingAuditEvent).\n\nExpected: ingestSuccess=true, indexSuccess=true, publishSuccess=false, missingAuditEvents=[PublishAuditEvent]"
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET /events/evt-004/logs",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-004/logs",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-004",
+                                        "logs"
+                                    ]
+                                },
+                                "description": "Returns the raw audit events and worker logs for evt-004.\n\nExpected: 3 audit events (Ingest=EventTelemetry, Index=EventTelemetry, Publish=ExceptionTelemetry with EventHubConnectionException), 1 PublishingWorker error log."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET /events/evt-004/prompt",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-004/prompt",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-004",
+                                        "prompt"
+                                    ]
+                                },
+                                "description": "Returns the fully-assembled LLM investigation prompt for evt-004 without invoking the LLM."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "POST /events/evt-004/investigations",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-004/investigations",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-004",
+                                        "investigations"
+                                    ]
+                                },
+                                "description": "Runs an AI-powered investigation for evt-004 (MissingPublishingAuditEvent).\n\nExpected verdict: rootCause=MissingPublishingAuditEvent\nCheck the X-Cache response header: HIT = served from cache, MISS = fresh LLM call."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Scenario 5 — PublishLatencyExceedsSLA (evt-005)",
+                    "description": "All three audit events are present but the Ingest-to-Publish gap is ~17.1 minutes, exceeding the 15-minute SLA threshold. The PublishingWorker experienced transient EventHub throttling and retried successfully, but the cumulative delay breached SLA. No data loss occurred.",
+                    "item": [
+                        {
+                            "name": "GET /events/evt-005/lineage",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-005/lineage",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-005",
+                                        "lineage"
+                                    ]
+                                },
+                                "description": "Returns the data lineage projection for evt-005 (PublishLatencyExceedsSLA).\n\nExpected: ingestSuccess=true, indexSuccess=true, publishSuccess=true, missingAuditEvents=[], publishLatencySlaMet=false (latency ~17.1 min > 15 min SLA)"
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET /events/evt-005/logs",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-005/logs",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-005",
+                                        "logs"
+                                    ]
+                                },
+                                "description": "Returns the raw audit events and worker logs for evt-005.\n\nExpected: 3 EventTelemetry audit events, 5 PublishingWorker log entries (4 throttle warnings + 1 success after 4 retries)."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET /events/evt-005/prompt",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-005/prompt",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-005",
+                                        "prompt"
+                                    ]
+                                },
+                                "description": "Returns the fully-assembled LLM investigation prompt for evt-005 without invoking the LLM."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "POST /events/evt-005/investigations",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-005/investigations",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-005",
+                                        "investigations"
+                                    ]
+                                },
+                                "description": "Runs an AI-powered investigation for evt-005 (PublishLatencyExceedsSLA).\n\nExpected verdict: rootCause=PublishLatencyExceedsSLA\nCheck the X-Cache response header: HIT = served from cache, MISS = fresh LLM call."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Scenario 6 — UnknownRootCause (evt-006)",
+                    "description": "No audit events recorded at all. The only worker log is a generic IngestionWorker restart warning with no eventId and no actionable context. Evidence is entirely absent — root cause is genuinely indeterminate.",
+                    "item": [
+                        {
+                            "name": "GET /events/evt-006/lineage",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-006/lineage",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-006",
+                                        "lineage"
+                                    ]
+                                },
+                                "description": "Returns the data lineage projection for evt-006 (UnknownRootCause).\n\nExpected: ingestSuccess=false, indexSuccess=false, publishSuccess=false, missingAuditEvents=[IngestAuditEvent, IndexAuditEvent, PublishAuditEvent]"
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET /events/evt-006/logs",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-006/logs",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-006",
+                                        "logs"
+                                    ]
+                                },
+                                "description": "Returns the raw audit events and worker logs for evt-006.\n\nExpected: 0 audit events, 1 IngestionWorker warning log (generic restart, no context)."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET /events/evt-006/prompt",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-006/prompt",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-006",
+                                        "prompt"
+                                    ]
+                                },
+                                "description": "Returns the fully-assembled LLM investigation prompt for evt-006 without invoking the LLM."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "POST /events/evt-006/investigations",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/events/evt-006/investigations",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "events",
+                                        "evt-006",
+                                        "investigations"
+                                    ]
+                                },
+                                "description": "Runs an AI-powered investigation for evt-006 (UnknownRootCause).\n\nExpected verdict: rootCause=Unknown\nCheck the X-Cache response header: HIT = served from cache, MISS = fresh LLM call."
+                            },
+                            "response": []
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Incident (role: user)",
+            "description": "Incident-level endpoints. Each incident maps to one of the 6 event scenarios.\n\nIncident → EventId → Scenario mapping:\n| IncidentId | EventId | Scenario |\n|---|---|---|\n| 1 | evt-001 | AllAuditEventsPresent |\n| 2 | evt-002 | MissingIngestionAuditEvent |\n| 3 | evt-003 | MissingIndexingAuditEvent |\n| 4 | evt-004 | MissingPublishingAuditEvent |\n| 5 | evt-005 | PublishLatencyExceedsSLA |\n| 6 | evt-006 | UnknownRootCause |",
+            "item": [
+                {
+                    "name": "GET /incidents — List All Incidents",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/incidents",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "incidents"
+                            ]
+                        },
+                        "description": "Returns all available incidents.\n\nExpected: 6 incidents, each with incidentId, incidentTitle, and eventId."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Scenario 1 — AllAuditEventsPresent (Incident 1 → evt-001)",
+                    "description": "Healthy baseline incident. All three pipeline stages completed successfully.",
+                    "item": [
+                        {
+                            "name": "GET /incidents/1",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/incidents/1",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "incidents",
+                                        "1"
+                                    ]
+                                },
+                                "description": "Returns incident 1 (maps to evt-001, AllAuditEventsPresent)."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET /incidents/1/prompt",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/incidents/1/prompt",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "incidents",
+                                        "1",
+                                        "prompt"
+                                    ]
+                                },
+                                "description": "Returns the fully-assembled LLM investigation prompt for incident 1 without invoking the LLM."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "POST /incidents/1/investigations",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/incidents/1/investigations",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "incidents",
+                                        "1",
+                                        "investigations"
+                                    ]
+                                },
+                                "description": "Runs an AI-powered investigation for incident 1 (AllAuditEventsPresent).\n\nExpected verdict: rootCause=AllAuditEventsPresent\nCheck the X-Cache response header: HIT = served from cache, MISS = fresh LLM call."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Scenario 2 — MissingIngestionAuditEvent (Incident 2 → evt-002)",
+                    "description": "Incident for the missing ingestion scenario. ConnectionDropException prevented the event from entering the pipeline.",
+                    "item": [
+                        {
+                            "name": "GET /incidents/2",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/incidents/2",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "incidents",
+                                        "2"
+                                    ]
+                                },
+                                "description": "Returns incident 2 (maps to evt-002, MissingIngestionAuditEvent)."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET /incidents/2/prompt",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/incidents/2/prompt",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "incidents",
+                                        "2",
+                                        "prompt"
+                                    ]
+                                },
+                                "description": "Returns the fully-assembled LLM investigation prompt for incident 2 without invoking the LLM."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "POST /incidents/2/investigations",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/incidents/2/investigations",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "incidents",
+                                        "2",
+                                        "investigations"
+                                    ]
+                                },
+                                "description": "Runs an AI-powered investigation for incident 2 (MissingIngestionAuditEvent).\n\nExpected verdict: rootCause=MissingIngestionAuditEvent\nCheck the X-Cache response header: HIT = served from cache, MISS = fresh LLM call."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Scenario 3 — MissingIndexingAuditEvent (Incident 3 → evt-003)",
+                    "description": "Incident for the missing indexing scenario. IndexStoreTimeoutException caused the IndexingWorker to fail while Ingest and Publish both succeeded.",
+                    "item": [
+                        {
+                            "name": "GET /incidents/3",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/incidents/3",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "incidents",
+                                        "3"
+                                    ]
+                                },
+                                "description": "Returns incident 3 (maps to evt-003, MissingIndexingAuditEvent)."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET /incidents/3/prompt",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/incidents/3/prompt",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "incidents",
+                                        "3",
+                                        "prompt"
+                                    ]
+                                },
+                                "description": "Returns the fully-assembled LLM investigation prompt for incident 3 without invoking the LLM."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "POST /incidents/3/investigations",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/incidents/3/investigations",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "incidents",
+                                        "3",
+                                        "investigations"
+                                    ]
+                                },
+                                "description": "Runs an AI-powered investigation for incident 3 (MissingIndexingAuditEvent).\n\nExpected verdict: rootCause=MissingIndexingAuditEvent\nCheck the X-Cache response header: HIT = served from cache, MISS = fresh LLM call."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Scenario 4 — MissingPublishingAuditEvent (Incident 4 → evt-004)",
+                    "description": "Incident for the missing publishing scenario. EventHubConnectionException caused the PublishingWorker to exhaust retries — event processed internally but never reached downstream consumers.",
+                    "item": [
+                        {
+                            "name": "GET /incidents/4",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/incidents/4",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "incidents",
+                                        "4"
+                                    ]
+                                },
+                                "description": "Returns incident 4 (maps to evt-004, MissingPublishingAuditEvent)."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET /incidents/4/prompt",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/incidents/4/prompt",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "incidents",
+                                        "4",
+                                        "prompt"
+                                    ]
+                                },
+                                "description": "Returns the fully-assembled LLM investigation prompt for incident 4 without invoking the LLM."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "POST /incidents/4/investigations",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/incidents/4/investigations",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "incidents",
+                                        "4",
+                                        "investigations"
+                                    ]
+                                },
+                                "description": "Runs an AI-powered investigation for incident 4 (MissingPublishingAuditEvent).\n\nExpected verdict: rootCause=MissingPublishingAuditEvent\nCheck the X-Cache response header: HIT = served from cache, MISS = fresh LLM call."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Scenario 5 — PublishLatencyExceedsSLA (Incident 5 → evt-005)",
+                    "description": "Incident for the SLA breach scenario. All audit events present but Ingest-to-Publish latency (~17.1 min) exceeded the 15-minute SLA. No data loss.",
+                    "item": [
+                        {
+                            "name": "GET /incidents/5",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/incidents/5",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "incidents",
+                                        "5"
+                                    ]
+                                },
+                                "description": "Returns incident 5 (maps to evt-005, PublishLatencyExceedsSLA)."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET /incidents/5/prompt",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/incidents/5/prompt",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "incidents",
+                                        "5",
+                                        "prompt"
+                                    ]
+                                },
+                                "description": "Returns the fully-assembled LLM investigation prompt for incident 5 without invoking the LLM."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "POST /incidents/5/investigations",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/incidents/5/investigations",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "incidents",
+                                        "5",
+                                        "investigations"
+                                    ]
+                                },
+                                "description": "Runs an AI-powered investigation for incident 5 (PublishLatencyExceedsSLA).\n\nExpected verdict: rootCause=PublishLatencyExceedsSLA\nCheck the X-Cache response header: HIT = served from cache, MISS = fresh LLM call."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Scenario 6 — UnknownRootCause (Incident 6 → evt-006)",
+                    "description": "Incident for the indeterminate scenario. No audit events and only a generic restart warning — evidence is insufficient to determine root cause.",
+                    "item": [
+                        {
+                            "name": "GET /incidents/6",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/incidents/6",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "incidents",
+                                        "6"
+                                    ]
+                                },
+                                "description": "Returns incident 6 (maps to evt-006, UnknownRootCause)."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "GET /incidents/6/prompt",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/incidents/6/prompt",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "incidents",
+                                        "6",
+                                        "prompt"
+                                    ]
+                                },
+                                "description": "Returns the fully-assembled LLM investigation prompt for incident 6 without invoking the LLM."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "POST /incidents/6/investigations",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/incidents/6/investigations",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "incidents",
+                                        "6",
+                                        "investigations"
+                                    ]
+                                },
+                                "description": "Runs an AI-powered investigation for incident 6 (UnknownRootCause).\n\nExpected verdict: rootCause=Unknown\nCheck the X-Cache response header: HIT = served from cache, MISS = fresh LLM call."
+                            },
+                            "response": []
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Telemetry (role: user)",
+            "description": "In-memory telemetry store endpoints. Returns investigation telemetry events emitted by both the Event and Incident investigation endpoints.",
+            "item": [
+                {
+                    "name": "GET /telemetry — Recent Investigation Events (default limit=10)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/telemetry?limit=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "telemetry"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "10",
+                                    "description": "Maximum number of events to return (1–100, default 10)"
+                                }
+                            ]
+                        },
+                        "description": "Returns the most recent investigation telemetry events in ascending chronological order.\n\nEach entry includes: telemetryType, timestamp, incidentId (null for event-driven investigations), eventId, response (responseTimeMs, cached, confidence, rootCause, llmUsage), and validation (expectedRootCause, actualRootCause, rootCauseMatch)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "GET /telemetry — Recent Investigation Events (limit=50)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/telemetry?limit=50",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "telemetry"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "50",
+                                    "description": "Maximum number of events to return (1–100)"
+                                }
+                            ]
+                        },
+                        "description": "Returns up to 50 recent investigation telemetry events. Useful after running multiple investigations to review the full history."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Validation (role: admin)",
+            "description": "Runs every incident scenario through the investigation pipeline and compares the LLM verdict against the human-authored ground-truth label (ExpectedRootCause). Useful for regression testing the LLM prompt and measuring overall accuracy and cost.\n\nNote: The cache is bypassed — every incident is always sent directly to the LLM.",
+            "item": [
+                {
+                    "name": "POST /validation/run — Full Suite (limit=6)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/validation/run?limit=6",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "validation",
+                                "run"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "10",
+                                    "description": "Number of incidents to process (1–10). 6 = all scenarios."
+                                }
+                            ]
+                        },
+                        "description": "Executes the investigation pipeline for all 6 incident scenarios and returns:\n- Per-incident comparison of expected vs. actual root cause\n- rootCauseMatch boolean for each incident\n- Aggregated LLM cost across all non-cached calls\n\nRate limit: 10 LLM calls/minute per IP. Running all 6 scenarios counts as 6 calls."
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ]
+}

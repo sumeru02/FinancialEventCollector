@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Visual Studio 2022 / dotnet test run settings.
+  VS picks this up automatically when it is placed next to the .sln file.
+  The Claude__ApiKey environment variable is injected into the test host
+  process so that ClaudeService can authenticate with the Anthropic API.
+-->
+<RunSettings>
+  <RunConfiguration>
+    <EnvironmentVariables>
+      <Claude__ApiKey>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</Claude__ApiKey>
+    </EnvironmentVariables>
+  </RunConfiguration>
+</RunSettings>

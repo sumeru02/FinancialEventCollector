@@ -1,0 +1,59 @@
+@FinancialEventCollector_HostAddress = http://localhost:5053
+# API key must match ApiKey:Secret in appsettings.json (or APIKEY__SECRET env var in production)
+@ApiKey = dev-key-change-in-production
+
+### Get all event lineage views (paginated) (requires X-Api-Key)
+GET {{FinancialEventCollector_HostAddress}}/events/lineage
+Accept: application/json
+X-Api-Key: {{ApiKey}}
+
+###
+
+### Get the lineage view for a single event by EventId (requires X-Api-Key)
+GET {{FinancialEventCollector_HostAddress}}/events/evt-001/lineage
+Accept: application/json
+X-Api-Key: {{ApiKey}}
+
+###
+
+### Get the raw audit events and worker logs for a single event by EventId (requires X-Api-Key)
+GET {{FinancialEventCollector_HostAddress}}/events/evt-001/logs
+Accept: application/json
+X-Api-Key: {{ApiKey}}
+
+###
+
+### Get the investigation prompt for event evt-001 (requires X-Api-Key)
+GET {{FinancialEventCollector_HostAddress}}/events/evt-001/prompt
+Accept: application/json
+X-Api-Key: {{ApiKey}}
+
+###
+
+### Trigger an AI investigation for event evt-001 (requires X-Api-Key)
+POST {{FinancialEventCollector_HostAddress}}/events/evt-001/investigations
+Accept: application/json
+X-Api-Key: {{ApiKey}}
+
+###
+
+### Get all incidents (requires X-Api-Key)
+GET {{FinancialEventCollector_HostAddress}}/incidents
+Accept: application/json
+X-Api-Key: {{ApiKey}}
+
+###
+
+### Get a single incident by ScenarioId (requires X-Api-Key)
+GET {{FinancialEventCollector_HostAddress}}/incidents/1
+Accept: application/json
+X-Api-Key: {{ApiKey}}
+
+###
+
+### Trigger an AI investigation for incident with ScenarioId 2 (requires X-Api-Key)
+POST {{FinancialEventCollector_HostAddress}}/incidents/2/investigations
+Accept: application/json
+X-Api-Key: {{ApiKey}}
+
+###

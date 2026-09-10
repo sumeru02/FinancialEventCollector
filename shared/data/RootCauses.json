@@ -1,0 +1,46 @@
+{
+    "rootCauses": [
+        {
+            "name": "AllAuditEventsPresent",
+            "ordinal": 0,
+            "description": "All three audit events are present and within normal timing — no issue detected.",
+            "recommendedAction": "Transfer incident to the Downstream team consuming from Collector EventHub — all three audit events are present, confirming a successful Collector publish. The issue is likely in their EventHub reader or downstream service.",
+            "team": "Downstream"
+        },
+        {
+            "name": "MissingIngestionAuditEvent",
+            "ordinal": 1,
+            "description": "No IngestAuditEvent recorded — the event never entered the pipeline.",
+            "recommendedAction": "Collector on-call: re-ingest the missing event from the upstream InvoicingService — no IngestAuditEvent was recorded, so the event never entered the Collector pipeline.",
+            "team": "Collector"
+        },
+        {
+            "name": "MissingIndexingAuditEvent",
+            "ordinal": 2,
+            "description": "No IndexAuditEvent recorded — the index worker failed or was skipped.",
+            "recommendedAction": "Collector on-call: trigger a re-index for this event — the event exists in Collector Blob Storage (IngestAuditEvent is present) but the IndexAuditEvent was not recorded.",
+            "team": "Collector"
+        },
+        {
+            "name": "MissingPublishingAuditEvent",
+            "ordinal": 3,
+            "description": "No PublishAuditEvent recorded — the event never reached downstream consumers.",
+            "recommendedAction": "Collector on-call: trigger a re-publish for this event — the event exists in Collector Blob Storage (IngestAuditEvent is present) but the PublishAuditEvent was not recorded.",
+            "team": "Collector"
+        },
+        {
+            "name": "PublishLatencyExceedsSLA",
+            "ordinal": 4,
+            "description": "All three audit events are present but elapsed time between IngestAuditEvent and PublishAuditEvent exceeds the SLA threshold.",
+            "recommendedAction": "Collector on-call: investigate the publish pipeline for bottlenecks — all three audit events are present but the Ingest-to-Publish gap exceeds the SLA threshold. No data loss has occurred, but SLA has been breached.",
+            "team": "Collector"
+        },
+        {
+            "name": "Unknown",
+            "ordinal": 5,
+            "description": "Evidence is ambiguous or contradictory; manual review required.",
+            "recommendedAction": "Manual review required — evidence is ambiguous or contradictory. Escalate with the full correlated event log for this EventId.",
+            "team": "Escalation"
+        }
+    ]
+}

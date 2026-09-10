@@ -1,0 +1,263 @@
+[
+    {
+        "eventId": "evt-001",
+        "eventType": "InvoiceCreated",
+        "eventSource": "InvoicingService",
+        "scenarioMetadata": {
+            "scenarioName": "AllAuditEventsPresent",
+            "scenarioDescription": "All three stages present — healthy baseline, no gap.",
+            "expectedRootCause": "AllAuditEventsPresent",
+            "expectedExplanation": "All 3 Audit Events present for all pipeline stages within normal timing."
+        },
+        "auditEvents": [
+            {
+                "name": "IngestAuditEvent",
+                "eventId": "evt-001",
+                "sourceEventTimestamp": "2026-08-10T16:50:10Z",
+                "ingestionTimestamp": "2026-08-10T16:50:45Z",
+                "telemetryType": "EventTelemetry"
+            },
+            {
+                "name": "IndexAuditEvent",
+                "eventId": "evt-001",
+                "sourceEventTimestamp": "2026-08-10T16:50:10Z",
+                "indexingTimestamp": "2026-08-10T16:51:03Z",
+                "telemetryType": "EventTelemetry"
+            },
+            {
+                "name": "PublishAuditEvent",
+                "eventId": "evt-001",
+                "sourceEventTimestamp": "2026-08-10T16:50:10Z",
+                "publishingTimestamp": "2026-08-10T16:51:19Z",
+                "telemetryType": "EventTelemetry"
+            }
+        ],
+        "workerLogs": [
+            {
+                "timestamp": "2026-08-10T16:50:45Z",
+                "workerName": "IngestionWorker",
+                "eventId": "evt-001",
+                "level": "Info",
+                "message": "Event ingested and parsed successfully."
+            },
+            {
+                "timestamp": "2026-08-10T16:51:03Z",
+                "workerName": "IndexingWorker",
+                "eventId": "evt-001",
+                "level": "Info",
+                "message": "Event written to index store successfully."
+            },
+            {
+                "timestamp": "2026-08-10T16:51:19Z",
+                "workerName": "PublishingWorker",
+                "eventId": "evt-001",
+                "level": "Info",
+                "message": "Event published to downstream consumers successfully."
+            }
+        ]
+    },
+    {
+        "eventId": "evt-002",
+        "eventType": null,
+        "eventSource": "InvoicingService",
+        "scenarioMetadata": {
+            "scenarioName": "MissingIngestionEvent",
+            "scenarioDescription": "No audit events recorded at all. Ingest gates both Index and Publish — the event never entered the pipeline.",
+            "expectedRootCause": "MissingIngestionAuditEvent",
+            "expectedExplanation": "No IngestAuditEvent recorded; the IngestionWorker logged a connection drop before the payload could be read."
+        },
+        "auditEvents": [
+            {
+                "name": "IngestAuditEvent",
+                "eventId": null,
+                "sourceEventTimestamp": "2026-08-10T17:04:58Z",
+                "telemetryType": "ExceptionTelemetry",
+                "exceptionOccurred": true,
+                "exceptionType": "ConnectionDropException",
+                "exceptionMessage": "Connection to upstream partner feed dropped before payload could be read; no event was parsed."
+            }
+        ],
+        "workerLogs": [
+            {
+                "timestamp": "2026-08-10T17:04:58Z",
+                "workerName": "IngestionWorker",
+                "level": "Warning",
+                "message": "Connection to upstream partner feed dropped before payload could be read; no event was parsed."
+            }
+        ]
+    },
+    {
+        "eventId": "evt-003",
+        "eventType": "InvoiceCreated",
+        "eventSource": "InvoicingService",
+        "scenarioMetadata": {
+            "scenarioName": "MissingIndexingEvent",
+            "scenarioDescription": "Ingest and Publish are present, but Index is missing. Index and Publish run as separate, independent parallel workers — Publish can complete even if Indexing fails.",
+            "expectedRootCause": "MissingIndexingAuditEvent",
+            "expectedExplanation": "No IndexAuditEvent recorded; the IndexingWorker logged a connection timeout to the index store, while Ingest and Publish both completed successfully."
+        },
+        "auditEvents": [
+            {
+                "name": "IngestAuditEvent",
+                "eventId": "evt-003",
+                "sourceEventTimestamp": "2026-08-10T17:15:10Z",
+                "ingestionTimestamp": "2026-08-10T17:15:45Z",
+                "telemetryType": "EventTelemetry"
+            },
+            {
+                "name": "IndexAuditEvent",
+                "eventId": "evt-003",
+                "sourceEventTimestamp": "2026-08-10T17:15:10Z",
+                "telemetryType": "ExceptionTelemetry",
+                "exceptionOccurred": true,
+                "exceptionType": "IndexStoreTimeoutException",
+                "exceptionMessage": "Failed to write index entry: connection timeout to index store."
+            },
+            {
+                "name": "PublishAuditEvent",
+                "eventId": "evt-003",
+                "sourceEventTimestamp": "2026-08-10T17:15:10Z",
+                "publishingTimestamp": "2026-08-10T17:16:19Z",
+                "telemetryType": "EventTelemetry"
+            }
+        ],
+        "workerLogs": [
+            {
+                "timestamp": "2026-08-10T17:16:03Z",
+                "workerName": "IndexingWorker",
+                "level": "Error",
+                "message": "Failed to write index entry: connection timeout to index store."
+            }
+        ]
+    },
+    {
+        "eventId": "evt-004",
+        "eventType": "InvoiceCreated",
+        "eventSource": "InvoicingService",
+        "scenarioMetadata": {
+            "scenarioName": "MissingPublishingEvent",
+            "scenarioDescription": "Publish audit event never recorded — Ingest and Index present. The most common real-world gap: an event fully processed internally but never made it to downstream consumers.",
+            "expectedRootCause": "MissingPublishingAuditEvent",
+            "expectedExplanation": "No PublishAuditEvent recorded; the PublishingWorker exceeded the connection retry limit to EventHub, so the event never reached downstream consumers."
+        },
+        "auditEvents": [
+            {
+                "name": "IngestAuditEvent",
+                "eventId": "evt-004",
+                "sourceEventTimestamp": "2026-08-10T17:25:10Z",
+                "ingestionTimestamp": "2026-08-10T17:25:45Z",
+                "telemetryType": "EventTelemetry"
+            },
+            {
+                "name": "IndexAuditEvent",
+                "eventId": "evt-004",
+                "sourceEventTimestamp": "2026-08-10T17:25:10Z",
+                "indexingTimestamp": "2026-08-10T17:26:03Z",
+                "telemetryType": "EventTelemetry"
+            },
+            {
+                "name": "PublishAuditEvent",
+                "eventId": "evt-004",
+                "sourceEventTimestamp": "2026-08-10T17:25:10Z",
+                "telemetryType": "ExceptionTelemetry",
+                "exceptionOccurred": true,
+                "exceptionType": "EventHubConnectionException",
+                "exceptionMessage": "Failed to publish event to EventHub: connection retry limit exceeded."
+            }
+        ],
+        "workerLogs": [
+            {
+                "timestamp": "2026-08-10T17:26:46Z",
+                "workerName": "PublishingWorker",
+                "level": "Error",
+                "message": "Failed to publish event to EventHub: connection retry limit exceeded."
+            }
+        ]
+    },
+    {
+        "eventId": "evt-005",
+        "eventType": "InvoiceCreated",
+        "eventSource": "InvoicingService",
+        "scenarioMetadata": {
+            "scenarioName": "PublishLatencyExceedsSLA",
+            "scenarioDescription": "All three audit events are present but the Ingest-to-Publish gap is ~17.1 minutes, exceeding the 15-minute SLA threshold. The PublishingWorker experienced transient EventHub throttling and retried successfully, but the cumulative delay breached SLA. No data loss occurred.",
+            "expectedRootCause": "PublishLatencyExceedsSLA",
+            "expectedExplanation": "All 3 Audit Events present but the Ingest-to-Publish gap (~17.1 min) exceeds the 15-minute SLA threshold; the PublishingWorker logged repeated EventHub throttle errors before eventually succeeding."
+        },
+        "auditEvents": [
+            {
+                "name": "IngestAuditEvent",
+                "eventId": "evt-005",
+                "sourceEventTimestamp": "2026-08-10T17:35:10Z",
+                "ingestionTimestamp": "2026-08-10T17:35:45Z",
+                "telemetryType": "EventTelemetry"
+            },
+            {
+                "name": "IndexAuditEvent",
+                "eventId": "evt-005",
+                "sourceEventTimestamp": "2026-08-10T17:35:10Z",
+                "indexingTimestamp": "2026-08-10T17:36:03Z",
+                "telemetryType": "EventTelemetry"
+            },
+            {
+                "name": "PublishAuditEvent",
+                "eventId": "evt-005",
+                "sourceEventTimestamp": "2026-08-10T17:35:10Z",
+                "publishingTimestamp": "2026-08-10T17:52:19Z",
+                "telemetryType": "EventTelemetry"
+            }
+        ],
+        "workerLogs": [
+            {
+                "timestamp": "2026-08-10T17:36:20Z",
+                "workerName": "PublishingWorker",
+                "level": "Warning",
+                "message": "EventHub publish throttled (attempt 1/5); backing off for 60 seconds."
+            },
+            {
+                "timestamp": "2026-08-10T17:40:22Z",
+                "workerName": "PublishingWorker",
+                "level": "Warning",
+                "message": "EventHub publish throttled (attempt 2/5); backing off for 120 seconds."
+            },
+            {
+                "timestamp": "2026-08-10T17:44:28Z",
+                "workerName": "PublishingWorker",
+                "level": "Warning",
+                "message": "EventHub publish throttled (attempt 3/5); backing off for 240 seconds."
+            },
+            {
+                "timestamp": "2026-08-10T17:48:34Z",
+                "workerName": "PublishingWorker",
+                "level": "Warning",
+                "message": "EventHub publish throttled (attempt 4/5); backing off for 240 seconds."
+            },
+            {
+                "timestamp": "2026-08-10T17:52:19Z",
+                "workerName": "PublishingWorker",
+                "level": "Info",
+                "message": "Event published successfully after 4 retries (total delay: 17m 9s)."
+            }
+        ]
+    },
+    {
+        "eventId": "evt-006",
+        "eventType": null,
+        "eventSource": "InvoicingService",
+        "scenarioMetadata": {
+            "scenarioName": "UnknownRootCause",
+            "scenarioDescription": "No audit events recorded at all, and the only worker log is a generic restart warning with no eventId and no actionable context. Evidence is entirely absent — root cause is genuinely indeterminate.",
+            "expectedRootCause": "Unknown",
+            "expectedExplanation": "No audit events recorded and no worker log provides a specific failure reason or eventId correlation; the only signal is a generic IngestionWorker restart warning. Evidence is insufficient to determine root cause — manual review required."
+        },
+        "auditEvents": [],
+        "workerLogs": [
+            {
+                "timestamp": "2026-08-10T18:05:00Z",
+                "workerName": "IngestionWorker",
+                "level": "Warning",
+                "message": "Worker restarted after unexpected shutdown. No context available."
+            }
+        ]
+    }
+]
